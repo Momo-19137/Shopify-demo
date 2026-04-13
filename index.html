@@ -25,7 +25,6 @@
             min-height: 100vh; 
             margin: 0;
             color: #000;
-            overflow: hidden;
         }
 
         .card { 
@@ -64,6 +63,7 @@
 
         button { border: none; padding: 16px; border-radius: 14px; font-weight: 600; font-size: 16px; cursor: pointer; width: 100%; color: white; margin-bottom: 10px; }
         .btn-start { background: var(--ios-dark-green); }
+        .btn-stop { background: var(--ios-dark-red); }
         .btn-buy { background: #000; margin-top: 25px; width: 80%; }
         
         #status { margin-top: 20px; font-weight: 600; font-size: 14px; color: var(--ios-gray); }
@@ -80,7 +80,8 @@
             <label>Interval (seconds)</label>
             <input type="number" id="intervalInput" value="2">
         </div>
-        <button class="btn-start" onclick="checkMode()">Start Notifications</button>
+        <button class="btn-start" onclick="startSysteem()">Start Notifications</button>
+        <button class="btn-stop" onclick="stopSysteem()">Stop Notifications</button>
         <div id="status">Status: Idle</div>
     </div>
 
@@ -89,16 +90,18 @@
         <h2>Shopify Demo</h2>
         <p class="sub-text">You have used your free demo.</p>
         <p class="sub-text" style="font-size: 14px;">To get infinite notifications, please buy the subscription.</p>
-        <button class="btn-buy" onclick="window.location.href='JE_BETAAL_LINK_HIER'">Get Subscription</button>
+        <button class="btn-buy" onclick="window.location.reload()">Get Subscription</button>
     </div>
 
     <script>
-        // Detecteer of de app geopend is vanaf het beginscherm (Home Screen)
+        let audio = new Audio('kaching.mp3');
+        let orderNumber = Math.floor(Math.random() * 5000) + 1000;
+        let timer = null;
         const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
 
         window.onload = function() {
-            // Als de app op het beginscherm staat, laat ALTIJD de paywall zien
-            if (isStandalone) {
+            // Als de app op het beginscherm staat OF al eerder gebruikt is, toon paywall
+            if (localStorage.getItem('demoUsed') === 'true' || isStandalone) {
                 showPaywall();
             }
         };
@@ -109,13 +112,53 @@
             document.body.style.background = '#ffffff';
         }
 
-        function checkMode() {
-            if (!isStandalone) {
-                // Als ze in Safari zitten, dwing ze om toe te voegen aan homescreen
-                alert("⚠️ Stap 1: Klik op de 'Deel' knop onderaan.\nStap 2: Kies 'Zet op beginscherm'.\n\nDaarna kun je de demo starten.");
-            } else {
+        function startSysteem() {
+            if (localStorage.getItem('demoUsed') === 'true') {
                 showPaywall();
+                return;
             }
+
+            if (timer !== null) return;
+            
+            const statusDiv = document.getElementById('status');
+            Notification.requestPermission().then(perm => {
+                if (perm === "granted") {
+                    statusDiv.innerText = "Status: Running";
+                    statusDiv.style.color = "var(--ios-dark-green)";
+                    sendNotification();
+                    timer = setInterval(sendNotification, document.getElementById('intervalInput').value * 1000);
+                    
+                    // Toon de instructie in het Engels
+                    if (!isStandalone) {
+                        setTimeout(() => {
+                            alert("⚠️ TRIAL ACTIVE\n\nWhen on iOS: To keep notifications running in the background, you must 'Add to Home Screen'.\n\n1. Tap the Share button\n2. Select 'Add to Home Screen'");
+                        }, 1000);
+                    }
+                }
+            });
+        }
+
+        function stopSysteem() {
+            if (timer === null) return;
+            clearInterval(timer);
+            timer = null;
+            
+            // Zodra ze stoppen, is de demo officieel voorbij
+            localStorage.setItem('demoUsed', 'true');
+            showPaywall();
+        }
+
+        function sendNotification() {
+            let storeName = document.getElementById('storeNameInput').value.trim() || "Online Store";
+            const bodyText = "€29.95, 1 item from Online Store • " + storeName;
+
+            new Notification("⚠️DEMO Order #" + orderNumber, { 
+                body: bodyText, 
+                icon: "icon.png" 
+            });
+            
+            audio.play().catch(e => {});
+            orderNumber++;
         }
     </script>
 </body>
