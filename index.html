@@ -25,6 +25,7 @@
             min-height: 100vh; 
             margin: 0;
             color: #000;
+            overflow: hidden;
         }
 
         .card { 
@@ -37,7 +38,6 @@
             width: 88%; 
             max-width: 360px;
             border: 1px solid rgba(255,255,255,0.3);
-            margin: 20px 0;
         }
 
         #paywallScreen {
@@ -45,17 +45,13 @@
             background: #ffffff;
             height: 100vh;
             width: 100vw;
-            max-width: none;
-            border-radius: 0;
-            margin: 0;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            border: none;
             position: fixed;
             top: 0;
             left: 0;
-            z-index: 9999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
         }
 
         .app-icon { border-radius: 20%; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
@@ -63,24 +59,19 @@
         .sub-text { color: var(--ios-gray); margin-top: 10px; font-size: 16px; max-width: 280px; line-height: 1.4; }
 
         .setup-group { margin-bottom: 20px; text-align: left; }
-        .price-settings { border-top: 1px solid #e5e5ea; padding-top: 15px; margin-top: 15px; }
-        
         label { display: block; font-size: 11px; font-weight: 600; color: var(--ios-gray); margin-bottom: 6px; text-transform: uppercase; }
-        input { width: 100%; padding: 12px; border: 1px solid #d1d1d6; border-radius: 10px; font-size: 16px; box-sizing: border-box; margin-bottom: 12px; background: #fff; }
+        input { width: 100%; padding: 12px; border: 1px solid #d1d1d6; border-radius: 10px; font-size: 16px; box-sizing: border-box; margin-bottom: 12px; }
 
         button { border: none; padding: 16px; border-radius: 14px; font-weight: 600; font-size: 16px; cursor: pointer; width: 100%; color: white; margin-bottom: 10px; }
         .btn-start { background: var(--ios-dark-green); }
-        .btn-stop { background: var(--ios-dark-red); }
-        .btn-buy { background: #000; margin-top: 25px; width: 80%; max-width: 250px; }
+        .btn-buy { background: #000; margin-top: 25px; width: 80%; }
         
         #status { margin-top: 20px; font-weight: 600; font-size: 14px; color: var(--ios-gray); }
-        .fade-in { animation: fadeIn 0.4s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
 
-    <div id="appScreen" class="card fade-in">
+    <div id="appScreen" class="card">
         <img src="icon.png" width="60" height="60" class="app-icon">
         <h2>Shopify Demo</h2>
         <div class="setup-group">
@@ -88,56 +79,26 @@
             <input type="text" id="storeNameInput" placeholder="Online Store">
             <label>Interval (seconds)</label>
             <input type="number" id="intervalInput" value="2">
-            <div class="price-settings">
-                <label>Price for 1 item (€)</label>
-                <input type="text" id="price1" value="29.95">
-                <label>Price for 2 items (€)</label>
-                <input type="text" id="price2" value="49.95">
-                <label>Price for 3 items (€)</label>
-                <input type="text" id="price3" value="89.95">
-            </div>
         </div>
-        <button class="btn-start" onclick="startSysteem()">Start Notifications</button>
-        <button class="btn-stop" onclick="stopSysteem()">Stop Notifications</button>
+        <button class="btn-start" onclick="checkMode()">Start Notifications</button>
         <div id="status">Status: Idle</div>
     </div>
 
-    <div id="paywallScreen" class="fade-in">
+    <div id="paywallScreen">
         <img src="icon.png" width="80" height="80" class="app-icon">
         <h2>Shopify Demo</h2>
         <p class="sub-text">You have used your free demo.</p>
         <p class="sub-text" style="font-size: 14px;">To get infinite notifications, please buy the subscription.</p>
-        <button class="btn-buy" onclick="window.location.reload()">Get Subscription</button>
+        <button class="btn-buy" onclick="window.location.href='JE_BETAAL_LINK_HIER'">Get Subscription</button>
     </div>
 
     <script>
-        let audio = new Audio('kaching.mp3');
-        let orderNumber = Math.floor(Math.random() * 5000) + 1000;
-        let timer = null;
-
-        // Maak een unieke ID voor deze telefoon
-        function getDeviceID() {
-            const info = [
-                navigator.userAgent,
-                screen.height,
-                screen.width,
-                navigator.hardwareConcurrency,
-                new Date().getTimezoneOffset()
-            ].join('|');
-            // Simpele hash functie om een ID te maken
-            let hash = 0;
-            for (let i = 0; i < info.length; i++) {
-                hash = ((hash << 5) - hash) + info.charCodeAt(i);
-                hash |= 0;
-            }
-            return "dev_" + Math.abs(hash);
-        }
-
-        const deviceID = getDeviceID();
+        // Detecteer of de app geopend is vanaf het beginscherm (Home Screen)
+        const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
 
         window.onload = function() {
-            // Check zowel de normale lock als de deviceID lock
-            if (localStorage.getItem('demoUsed') === 'true' || localStorage.getItem(deviceID) === 'used') {
+            // Als de app op het beginscherm staat, laat ALTIJD de paywall zien
+            if (isStandalone) {
                 showPaywall();
             }
         };
@@ -148,55 +109,13 @@
             document.body.style.background = '#ffffff';
         }
 
-        function startSysteem() {
-            if (localStorage.getItem('demoUsed') === 'true' || localStorage.getItem(deviceID) === 'used') {
+        function checkMode() {
+            if (!isStandalone) {
+                // Als ze in Safari zitten, dwing ze om toe te voegen aan homescreen
+                alert("⚠️ Stap 1: Klik op de 'Deel' knop onderaan.\nStap 2: Kies 'Zet op beginscherm'.\n\nDaarna kun je de demo starten.");
+            } else {
                 showPaywall();
-                return;
             }
-
-            if (timer !== null) return;
-            
-            const statusDiv = document.getElementById('status');
-            Notification.requestPermission().then(perm => {
-                if (perm === "granted") {
-                    statusDiv.innerText = "Status: Running";
-                    statusDiv.style.color = "var(--ios-dark-green)";
-                    sendNotification();
-                    timer = setInterval(sendNotification, document.getElementById('intervalInput').value * 1000);
-                }
-            });
-        }
-
-        function stopSysteem() {
-            if (timer === null) return;
-            clearInterval(timer);
-            timer = null;
-            
-            // Zet de blokkade op de normale manier EN op de deviceID
-            localStorage.setItem('demoUsed', 'true');
-            localStorage.setItem(deviceID, 'used');
-            
-            showPaywall();
-        }
-
-        function sendNotification() {
-            let storeName = document.getElementById('storeNameInput').value.trim() || "Online Store";
-            const p1 = document.getElementById('price1').value || "29.95";
-            const p2 = document.getElementById('price2').value || "49.95";
-            const p3 = document.getElementById('price3').value || "89.95";
-
-            const options = [
-                { price: "€" + p1, items: "1 item" },
-                { price: "€" + p2, items: "2 items" },
-                { price: "€" + p3, items: "3 items" }
-            ];
-
-            const randomOption = options[Math.floor(Math.random() * options.length)];
-            const bodyText = randomOption.price + ", " + randomOption.items + " from Online Store • " + storeName;
-
-            new Notification("⚠️DEMO Order #" + orderNumber, { body: bodyText, icon: "icon.png" });
-            audio.play().catch(e => {});
-            orderNumber++;
         }
     </script>
 </body>
