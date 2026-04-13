@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Shopify Demo</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
+    <style>
+        :root {
+            --ios-blue: #007aff;
+            --ios-dark-green: #006400;
+            --ios-dark-red: #8b0000;
+            --ios-gray: #8e8e93;
+            --ios-bg: #f2f2f7;
+        }
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+            background: var(--ios-bg); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh; 
+            margin: 0;
+            color: #000;
+        }
+
+        .card { 
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(10px);
+            padding: 30px 24px; 
+            border-radius: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08); 
+            text-align: center; 
+            width: 88%; 
+            max-width: 360px;
+            border: 1px solid rgba(255,255,255,0.3);
+            margin: 20px 0;
+        }
+        
+        .app-icon { border-radius: 20%; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+
+        h2 { font-weight: 700; font-size: 24px; margin-bottom: 8px; letter-spacing: -0.5px; }
+        
+        .setup-group { margin-bottom: 20px; text-align: left; }
+        .price-settings { border-top: 1px solid #e5e5ea; padding-top: 15px; margin-top: 15px; }
+        
+        label { 
+            display: block; 
+            font-size: 11px; 
+            font-weight: 600; 
+            color: var(--ios-gray); 
+            margin-bottom: 6px; 
+            text-transform: uppercase;
+        }
+
+        input { 
+            width: 100%; 
+            padding: 12px; 
+            border: 1px solid #d1d1d6; 
+            border-radius: 10px; 
+            font-size: 16px; 
+            box-sizing: border-box; 
+            margin-bottom: 12px; 
+            background: #fff;
+        }
+
+        button { 
+            border: none; 
+            padding: 16px; 
+            border-radius: 14px; 
+            font-weight: 600; 
+            font-size: 16px; 
+            cursor: pointer; 
+            width: 100%; 
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .btn-start { background: var(--ios-dark-green); }
+        .btn-stop { background: var(--ios-dark-red); }
+        
+        #status { margin-top: 20px; font-weight: 600; font-size: 14px; color: var(--ios-gray); }
+
+        .fade-in { animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div id="appScreen" class="card fade-in">
+        <img src="icon.png" width="60" height="60" class="app-icon">
+        <h2>Shopify Demo</h2>
+        
+        <div class="setup-group">
+            <label>Store Display Name</label>
+            <input type="text" id="storeNameInput" placeholder="Online Store">
+            
+            <label>Interval (seconds)</label>
+            <input type="number" id="intervalInput" value="2">
+
+            <div class="price-settings">
+                <label>Price for 1 item (€)</label>
+                <input type="text" id="price1" value="29.95" oninput="this.value = this.value.replace(/[^0-9.]/g, '')">
+                
+                <label>Price for 2 items (€)</label>
+                <input type="text" id="price2" value="49.95" oninput="this.value = this.value.replace(/[^0-9.]/g, '')">
+                
+                <label>Price for 3 items (€)</label>
+                <input type="text" id="price3" value="89.95" oninput="this.value = this.value.replace(/[^0-9.]/g, '')">
+            </div>
+        </div>
+
+        <button class="btn-start" onclick="startSysteem()">Start Notifications</button>
+        <button class="btn-stop" onclick="stopSysteem()">Stop Notifications</button>
+        
+        <div id="status">Status: Idle</div>
+    </div>
+
+    <script>
+        let audio = new Audio('kaching.mp3');
+        let orderNumber = Math.floor(Math.random() * 5000) + 1000; // Start met een willekeurig nummer
+        let timer = null;
+
+        function startSysteem() {
+            if (timer !== null) return;
+            const statusDiv = document.getElementById('status');
+            
+            if (!("Notification" in window)) {
+                alert("Deze browser ondersteunt geen notificaties.");
+                return;
+            }
+
+            Notification.requestPermission().then(perm => {
+                if (perm === "granted") {
+                    statusDiv.innerText = "Status: Running";
+                    statusDiv.style.color = "var(--ios-dark-green)";
+                    sendNotification();
+                    timer = setInterval(sendNotification, document.getElementById('intervalInput').value * 1000);
+                } else {
+                    alert("Je moet notificaties toestaan!");
+                }
+            });
+        }
+
+        function stopSysteem() {
+            clearInterval(timer);
+            timer = null;
+            const statusDiv = document.getElementById('status');
+            statusDiv.innerText = "Status: Idle";
+            statusDiv.style.color = "var(--ios-gray)";
+        }
+
+        function sendNotification() {
+            let storeName = document.getElementById('storeNameInput').value.trim() || "Online Store";
+            const p1 = document.getElementById('price1').value || "29.95";
+            const p2 = document.getElementById('price2').value || "49.95";
+            const p3 = document.getElementById('price3').value || "89.95";
+
+            const options = [
+                { price: "€" + p1, items: "1 item" },
+                { price: "€" + p2, items: "2 items" },
+                { price: "€" + p3, items: "3 items" }
+            ];
+
+            const randomOption = options[Math.floor(Math.random() * options.length)];
+            const bodyText = randomOption.price + ", " + randomOption.items + " from Online Store • " + storeName;
+
+            new Notification("⚠️DEMO Order #" + orderNumber, { 
+                body: bodyText, 
+                icon: "icon.png" 
+            });
+            
+            audio.play().catch(e => {});
+            orderNumber++;
+        }
+    </script>
+</body>
+</html>
