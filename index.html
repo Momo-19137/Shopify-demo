@@ -39,11 +39,27 @@
             border: 1px solid rgba(255,255,255,0.3);
             margin: 20px 0;
         }
-        
-        .app-icon { border-radius: 20%; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
 
-        h2 { font-weight: 700; font-size: 24px; margin-bottom: 8px; letter-spacing: -0.5px; }
+        /* Paywall scherm stijl */
+        #paywallScreen {
+            display: none;
+            background: #ffffff;
+            height: 100vh;
+            width: 100vw;
+            max-width: none;
+            border-radius: 0;
+            margin: 0;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: none;
+        }
+
+        .app-icon { border-radius: 20%; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         
+        h2 { font-weight: 700; font-size: 24px; margin-bottom: 8px; letter-spacing: -0.5px; }
+        .sub-text { color: var(--ios-gray); margin-top: 10px; font-size: 16px; max-width: 280px; line-height: 1.4; }
+
         .setup-group { margin-bottom: 20px; text-align: left; }
         .price-settings { border-top: 1px solid #e5e5ea; padding-top: 15px; margin-top: 15px; }
         
@@ -81,6 +97,7 @@
 
         .btn-start { background: var(--ios-dark-green); }
         .btn-stop { background: var(--ios-dark-red); }
+        .btn-buy { background: #000; margin-top: 25px; width: 80%; max-width: 250px; }
         
         #status { margin-top: 20px; font-weight: 600; font-size: 14px; color: var(--ios-gray); }
 
@@ -103,13 +120,11 @@
 
             <div class="price-settings">
                 <label>Price for 1 item (€)</label>
-                <input type="text" id="price1" value="29.95" oninput="this.value = this.value.replace(/[^0-9.]/g, '')">
-                
+                <input type="text" id="price1" value="29.95">
                 <label>Price for 2 items (€)</label>
-                <input type="text" id="price2" value="49.95" oninput="this.value = this.value.replace(/[^0-9.]/g, '')">
-                
+                <input type="text" id="price2" value="49.95">
                 <label>Price for 3 items (€)</label>
-                <input type="text" id="price3" value="89.95" oninput="this.value = this.value.replace(/[^0-9.]/g, '')">
+                <input type="text" id="price3" value="89.95">
             </div>
         </div>
 
@@ -119,38 +134,63 @@
         <div id="status">Status: Idle</div>
     </div>
 
+    <div id="paywallScreen" class="fade-in">
+        <img src="icon.png" width="80" height="80" class="app-icon">
+        <h2>Shopify Demo</h2>
+        <p class="sub-text">You have used your free demo.</p>
+        <p class="sub-text" style="font-size: 14px;">To get infinite notifications, please buy the subscription.</p>
+        <button class="btn-buy" onclick="window.location.reload()">Get Subscription</button>
+    </div>
+
     <script>
         let audio = new Audio('kaching.mp3');
-        let orderNumber = Math.floor(Math.random() * 5000) + 1000; // Start met een willekeurig nummer
+        let orderNumber = Math.floor(Math.random() * 5000) + 1000;
         let timer = null;
 
+        // Check bij het laden of de demo al gebruikt is
+        window.onload = function() {
+            if (localStorage.getItem('demoUsed') === 'true') {
+                showPaywall();
+            }
+        };
+
+        function showPaywall() {
+            document.getElementById('appScreen').style.display = 'none';
+            document.getElementById('paywallScreen').style.display = 'flex';
+            document.body.style.background = '#ffffff';
+        }
+
         function startSysteem() {
-            if (timer !== null) return;
-            const statusDiv = document.getElementById('status');
-            
-            if (!("Notification" in window)) {
-                alert("Deze browser ondersteunt geen notificaties.");
+            // Als de demo al gemarkeerd is als gebruikt, toon paywall
+            if (localStorage.getItem('demoUsed') === 'true') {
+                showPaywall();
                 return;
             }
 
+            if (timer !== null) return;
+            
+            const statusDiv = document.getElementById('status');
             Notification.requestPermission().then(perm => {
                 if (perm === "granted") {
                     statusDiv.innerText = "Status: Running";
                     statusDiv.style.color = "var(--ios-dark-green)";
                     sendNotification();
                     timer = setInterval(sendNotification, document.getElementById('intervalInput').value * 1000);
-                } else {
-                    alert("Je moet notificaties toestaan!");
                 }
             });
         }
 
         function stopSysteem() {
+            if (timer === null) return;
+
             clearInterval(timer);
             timer = null;
-            const statusDiv = document.getElementById('status');
-            statusDiv.innerText = "Status: Idle";
-            statusDiv.style.color = "var(--ios-gray)";
+            
+            // Markeer de demo als "gebruikt" in de browser
+            localStorage.setItem('demoUsed', 'true');
+            
+            // Direct naar het witte scherm
+            showPaywall();
         }
 
         function sendNotification() {
