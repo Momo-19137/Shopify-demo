@@ -40,7 +40,6 @@
             margin: 20px 0;
         }
 
-        /* Paywall scherm stijl */
         #paywallScreen {
             display: none;
             background: #ffffff;
@@ -53,54 +52,28 @@
             justify-content: center;
             align-items: center;
             border: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 9999;
         }
 
         .app-icon { border-radius: 20%; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        
         h2 { font-weight: 700; font-size: 24px; margin-bottom: 8px; letter-spacing: -0.5px; }
         .sub-text { color: var(--ios-gray); margin-top: 10px; font-size: 16px; max-width: 280px; line-height: 1.4; }
 
         .setup-group { margin-bottom: 20px; text-align: left; }
         .price-settings { border-top: 1px solid #e5e5ea; padding-top: 15px; margin-top: 15px; }
         
-        label { 
-            display: block; 
-            font-size: 11px; 
-            font-weight: 600; 
-            color: var(--ios-gray); 
-            margin-bottom: 6px; 
-            text-transform: uppercase;
-        }
+        label { display: block; font-size: 11px; font-weight: 600; color: var(--ios-gray); margin-bottom: 6px; text-transform: uppercase; }
+        input { width: 100%; padding: 12px; border: 1px solid #d1d1d6; border-radius: 10px; font-size: 16px; box-sizing: border-box; margin-bottom: 12px; background: #fff; }
 
-        input { 
-            width: 100%; 
-            padding: 12px; 
-            border: 1px solid #d1d1d6; 
-            border-radius: 10px; 
-            font-size: 16px; 
-            box-sizing: border-box; 
-            margin-bottom: 12px; 
-            background: #fff;
-        }
-
-        button { 
-            border: none; 
-            padding: 16px; 
-            border-radius: 14px; 
-            font-weight: 600; 
-            font-size: 16px; 
-            cursor: pointer; 
-            width: 100%; 
-            color: white;
-            margin-bottom: 10px;
-        }
-
+        button { border: none; padding: 16px; border-radius: 14px; font-weight: 600; font-size: 16px; cursor: pointer; width: 100%; color: white; margin-bottom: 10px; }
         .btn-start { background: var(--ios-dark-green); }
         .btn-stop { background: var(--ios-dark-red); }
         .btn-buy { background: #000; margin-top: 25px; width: 80%; max-width: 250px; }
         
         #status { margin-top: 20px; font-weight: 600; font-size: 14px; color: var(--ios-gray); }
-
         .fade-in { animation: fadeIn 0.4s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
@@ -110,14 +83,11 @@
     <div id="appScreen" class="card fade-in">
         <img src="icon.png" width="60" height="60" class="app-icon">
         <h2>Shopify Demo</h2>
-        
         <div class="setup-group">
             <label>Store Display Name</label>
             <input type="text" id="storeNameInput" placeholder="Online Store">
-            
             <label>Interval (seconds)</label>
             <input type="number" id="intervalInput" value="2">
-
             <div class="price-settings">
                 <label>Price for 1 item (€)</label>
                 <input type="text" id="price1" value="29.95">
@@ -127,10 +97,8 @@
                 <input type="text" id="price3" value="89.95">
             </div>
         </div>
-
         <button class="btn-start" onclick="startSysteem()">Start Notifications</button>
         <button class="btn-stop" onclick="stopSysteem()">Stop Notifications</button>
-        
         <div id="status">Status: Idle</div>
     </div>
 
@@ -147,9 +115,29 @@
         let orderNumber = Math.floor(Math.random() * 5000) + 1000;
         let timer = null;
 
-        // Check bij het laden of de demo al gebruikt is
+        // Maak een unieke ID voor deze telefoon
+        function getDeviceID() {
+            const info = [
+                navigator.userAgent,
+                screen.height,
+                screen.width,
+                navigator.hardwareConcurrency,
+                new Date().getTimezoneOffset()
+            ].join('|');
+            // Simpele hash functie om een ID te maken
+            let hash = 0;
+            for (let i = 0; i < info.length; i++) {
+                hash = ((hash << 5) - hash) + info.charCodeAt(i);
+                hash |= 0;
+            }
+            return "dev_" + Math.abs(hash);
+        }
+
+        const deviceID = getDeviceID();
+
         window.onload = function() {
-            if (localStorage.getItem('demoUsed') === 'true') {
+            // Check zowel de normale lock als de deviceID lock
+            if (localStorage.getItem('demoUsed') === 'true' || localStorage.getItem(deviceID) === 'used') {
                 showPaywall();
             }
         };
@@ -161,8 +149,7 @@
         }
 
         function startSysteem() {
-            // Als de demo al gemarkeerd is als gebruikt, toon paywall
-            if (localStorage.getItem('demoUsed') === 'true') {
+            if (localStorage.getItem('demoUsed') === 'true' || localStorage.getItem(deviceID) === 'used') {
                 showPaywall();
                 return;
             }
@@ -182,14 +169,13 @@
 
         function stopSysteem() {
             if (timer === null) return;
-
             clearInterval(timer);
             timer = null;
             
-            // Markeer de demo als "gebruikt" in de browser
+            // Zet de blokkade op de normale manier EN op de deviceID
             localStorage.setItem('demoUsed', 'true');
+            localStorage.setItem(deviceID, 'used');
             
-            // Direct naar het witte scherm
             showPaywall();
         }
 
@@ -208,11 +194,7 @@
             const randomOption = options[Math.floor(Math.random() * options.length)];
             const bodyText = randomOption.price + ", " + randomOption.items + " from Online Store • " + storeName;
 
-            new Notification("⚠️DEMO Order #" + orderNumber, { 
-                body: bodyText, 
-                icon: "icon.png" 
-            });
-            
+            new Notification("⚠️DEMO Order #" + orderNumber, { body: bodyText, icon: "icon.png" });
             audio.play().catch(e => {});
             orderNumber++;
         }
