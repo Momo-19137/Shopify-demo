@@ -146,6 +146,7 @@
         let audio = new Audio('kaching.mp3');
         let orderNumber = Math.floor(Math.random() * 5000) + 1000;
         let timer = null;
+        const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
 
         // Check bij het laden of de demo al gebruikt is
         window.onload = function() {
@@ -161,6 +162,12 @@
         }
 
         function startSysteem() {
+            // Check if user is in Safari and not on home screen
+            if (!isStandalone) {
+                alert("⚠️ ACTION REQUIRED\n\nWhen on iOS: To enable notifications, you must add this app to your Home Screen.\n\n1. Tap the Share button below\n2. Scroll down and tap 'Add to Home Screen'");
+                return;
+            }
+
             // Als de demo al gemarkeerd is als gebruikt, toon paywall
             if (localStorage.getItem('demoUsed') === 'true') {
                 showPaywall();
